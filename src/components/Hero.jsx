@@ -4,7 +4,7 @@ import { styles } from '../styles';
 import { shaq, bwmap, worldmap } from '../assets';
 
 /* ─────────────────────────────────────────────────────────
- *  TINY SVG ICONS  (no extra package needed)
+ *  TINY SVG ICONS
  * ───────────────────────────────────────────────────────── */
 const CloseIcon = () => (
   <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.8" strokeLinecap="round">
@@ -41,7 +41,7 @@ const SendIcon = () => (
 );
 
 /* ─────────────────────────────────────────────────────────
- *  POPUP CONFIG  — edit these values
+ *  POPUP CONFIG
  * ───────────────────────────────────────────────────────── */
 const CONFIG = {
   whatsappNumber  : '919696010729',          
@@ -50,16 +50,99 @@ const CONFIG = {
   defaultMessage  : "Hi, I'd like to discuss an opportunity with you.",
   yourName        : 'Durgesh Katyayan',
   yourTitle       : 'Full Stack & Android Developer',
+  roles           : [
+    'Full Stack Developer',
+    'Android Developer',
+    'Problem Solver',
+    'UI/UX Enthusiast',
+    'Tech Innovator'
+  ],
 };
 
 /* ─────────────────────────────────────────────────────────
- *  POPUP  (glassmorphism card styled with your project colours)
+ *  TYPING ANIMATION HOOK
+ * ───────────────────────────────────────────────────────── */
+const useTypingEffect = (texts, typingSpeed = 100, deletingSpeed = 50, pauseTime = 2000) => {
+  const [displayText, setDisplayText] = useState('');
+  const [currentIndex, setCurrentIndex] = useState(0);
+  const [isDeleting, setIsDeleting] = useState(false);
+
+  useEffect(() => {
+    const currentText = texts[currentIndex];
+    
+    const timer = setTimeout(() => {
+      if (!isDeleting) {
+        if (displayText.length < currentText.length) {
+          setDisplayText(currentText.slice(0, displayText.length + 1));
+        } else {
+          setTimeout(() => setIsDeleting(true), pauseTime);
+        }
+      } else {
+        if (displayText.length > 0) {
+          setDisplayText(currentText.slice(0, displayText.length - 1));
+        } else {
+          setIsDeleting(false);
+          setCurrentIndex((prev) => (prev + 1) % texts.length);
+        }
+      }
+    }, isDeleting ? deletingSpeed : typingSpeed);
+
+    return () => clearTimeout(timer);
+  }, [displayText, isDeleting, currentIndex, texts, typingSpeed, deletingSpeed, pauseTime]);
+
+  return displayText;
+};
+
+/* ─────────────────────────────────────────────────────────
+ *  FLOATING PARTICLES COMPONENT
+ * ───────────────────────────────────────────────────────── */
+const FloatingParticles = () => {
+  const particles = Array.from({ length: 20 }, (_, i) => ({
+    id: i,
+    size: Math.random() * 4 + 2,
+    initialX: Math.random() * 100,
+    initialY: Math.random() * 100,
+    duration: Math.random() * 10 + 15,
+    delay: Math.random() * 5,
+  }));
+
+  return (
+    <div className="absolute inset-0 overflow-hidden pointer-events-none opacity-30">
+      {particles.map((particle) => (
+        <motion.div
+          key={particle.id}
+          className="absolute rounded-full bg-gradient-to-br from-french to-taupe"
+          style={{
+            width: particle.size,
+            height: particle.size,
+            left: `${particle.initialX}%`,
+            top: `${particle.initialY}%`,
+          }}
+          animate={{
+            y: [0, -100, 0],
+            x: [0, Math.random() * 100 - 50, 0],
+            opacity: [0, 1, 0],
+          }}
+          transition={{
+            duration: particle.duration,
+            delay: particle.delay,
+            repeat: Infinity,
+            ease: "easeInOut",
+          }}
+        />
+      ))}
+    </div>
+  );
+};
+
+/* ─────────────────────────────────────────────────────────
+ *  POPUP COMPONENT
  * ───────────────────────────────────────────────────────── */
 const Popup = ({ onClose }) => {
-  const [showWA, setShowWA]   = useState(false);
-  const [msg,   setMsg]       = useState(CONFIG.defaultMessage);
-  const [sent,  setSent]      = useState(false);
-  const inputRef              = useRef(null);
+  const [showWA, setShowWA] = useState(false);
+  const [msg, setMsg] = useState(CONFIG.defaultMessage);
+  const [sent, setSent] = useState(false);
+  const inputRef = useRef(null);
 
   useEffect(() => {
     if (showWA && inputRef.current) inputRef.current.focus();
@@ -74,54 +157,48 @@ const Popup = ({ onClose }) => {
     setTimeout(() => { setSent(false); setShowWA(false); }, 2200);
   };
 
-  const viewResume     = () => window.open(CONFIG.resumePdfUrl, '_blank');
+  const viewResume = () => window.open(CONFIG.resumePdfUrl, '_blank');
   const downloadResume = () => {
-    const a       = document.createElement('a');
-    a.href        = CONFIG.resumePdfUrl;
-    a.download    = '../assets/Durgesh.pdf';
+    const a = document.createElement('a');
+    a.href = CONFIG.resumePdfUrl;
+    a.download = '../assets/Durgesh.pdf';
     a.click();
   };
 
-  /* card enters from bottom-right with a spring */
   const cardVariants = {
-    hidden : { opacity: 0, y: 48, scale: 0.88 },
-    visible: { opacity: 1, y: 0,  scale: 1,   transition: { duration: 0.45, ease: [0.34, 1.56, 0.64, 1] } },
-    exit   : { opacity: 0, y: 36, scale: 0.9,  transition: { duration: 0.3  } },
+    hidden: { opacity: 0, y: 48, scale: 0.88 },
+    visible: { opacity: 1, y: 0, scale: 1, transition: { duration: 0.45, ease: [0.34, 1.56, 0.64, 1] } },
+    exit: { opacity: 0, y: 36, scale: 0.9, transition: { duration: 0.3 } },
   };
 
-  /* stagger children */
   const childVariants = {
-    hidden : { opacity: 0, y: 14 },
+    hidden: { opacity: 0, y: 14 },
     visible: (i) => ({ opacity: 1, y: 0, transition: { delay: i * 0.08, duration: 0.35, ease: 'easeOut' } }),
   };
 
   return (
     <>
-      {/* ── backdrop ── */}
       <motion.div
         initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
-        className="fixed inset-0 z-[998]"
+        className="fixed inset-0 z-50"
         style={{ background: 'rgba(10,10,10,0.40)', backdropFilter: 'blur(3px)', WebkitBackdropFilter: 'blur(3px)' }}
         onClick={onClose}
       />
 
-      {/* ── card ── */}
       <motion.div
         variants={cardVariants} initial="hidden" animate="visible" exit="exit"
-        className="fixed bottom-6 right-4 sm:bottom-8 sm:right-8 z-[999] w-[340px] max-w-[92vw]"
+        className="fixed bottom-4 right-4 sm:bottom-8 sm:right-8 z-[999] w-[340px] max-w-[92vw]"
         style={{
-          background      : 'rgba(250,250,250,0.82)',
-          backdropFilter  : 'blur(18px) saturate(1.3)',
+          background: 'rgba(250,250,250,0.82)',
+          backdropFilter: 'blur(18px) saturate(1.3)',
           WebkitBackdropFilter: 'blur(18px) saturate(1.3)',
-          border          : '1px solid rgba(255,255,255,0.7)',
-          borderRadius    : '22px',
-          boxShadow       : '0 20px 56px rgba(0,0,0,0.18), 0 2px 8px rgba(0,0,0,0.06)',
+          border: '1px solid rgba(255,255,255,0.7)',
+          borderRadius: '22px',
+          boxShadow: '0 20px 56px rgba(0,0,0,0.18), 0 2px 8px rgba(0,0,0,0.06)',
         }}>
 
-        {/* header */}
         <div className="flex items-center justify-between px-5 pt-5 pb-3">
           <div className="flex items-center gap-3">
-            {/* avatar circle — uses french + taupe gradient */}
             <div
               className="flex items-center justify-center text-white font-mova font-bold text-lg"
               style={{
@@ -144,17 +221,14 @@ const Popup = ({ onClose }) => {
           </button>
         </div>
 
-        {/* thin divider */}
         <div className="mx-5" style={{ height: 1, background: 'rgba(0,0,0,0.08)' }} />
 
-        {/* body */}
         <div className="px-5 pt-4 pb-5">
           <motion.p custom={0} variants={childVariants} initial="hidden" animate="visible"
             className="text-eerieBlack font-poppins text-[13px] mb-4" style={{ opacity: 0.6 }}>
             👋 Let's <span className="text-french font-semibold">connect</span> or grab my resume!
           </motion.p>
 
-          {/* ── WhatsApp row ── */}
           <motion.div custom={1} variants={childVariants} initial="hidden" animate="visible">
             <button
               onClick={() => setShowWA(s => !s)}
@@ -176,7 +250,6 @@ const Popup = ({ onClose }) => {
             </button>
           </motion.div>
 
-          {/* expandable message box */}
           <AnimatePresence>
             {showWA && !sent && (
               <motion.div
@@ -218,7 +291,6 @@ const Popup = ({ onClose }) => {
             )}
           </AnimatePresence>
 
-          {/* ── Resume row ── */}
           <motion.div custom={2} variants={childVariants} initial="hidden" animate="visible" className="mt-2.5">
             <div
               className="flex items-center gap-3"
@@ -237,7 +309,6 @@ const Popup = ({ onClose }) => {
             </div>
           </motion.div>
 
-          {/* View / Download pills */}
           <motion.div custom={3} variants={childVariants} initial="hidden" animate="visible" className="flex gap-2 mt-2.5">
             <button
               onClick={viewResume}
@@ -259,14 +330,14 @@ const Popup = ({ onClose }) => {
 };
 
 /* ─────────────────────────────────────────────────────────
- *  MINI REOPEN PILL  (bottom-right, after popup is closed)
+ *  REOPEN PILL
  * ───────────────────────────────────────────────────────── */
 const ReopenPill = ({ onClick }) => (
   <motion.button
     initial={{ y: 40, opacity: 0 }} animate={{ y: 0, opacity: 1 }}
     transition={{ duration: 0.4, ease: [0.34, 1.56, 0.64, 1] }}
     onClick={onClick}
-    className="fixed bottom-6 right-4 sm:bottom-8 sm:right-8 z-[999] flex items-center gap-2.5 text-eerieBlack font-poppins font-medium text-[13px] hover:text-french transition-colors duration-200"
+    className="fixed bottom-4 right-4 sm:bottom-8 sm:right-8 z-[999] flex items-center gap-2.5 text-eerieBlack font-poppins font-medium text-[13px] hover:text-french transition-colors duration-200"
     style={{
       background: 'rgba(250,250,250,0.88)', backdropFilter: 'blur(14px)', WebkitBackdropFilter: 'blur(14px)',
       border: '1px solid rgba(255,255,255,0.7)', borderRadius: 16, padding: '10px 16px',
@@ -284,13 +355,12 @@ const ReopenPill = ({ onClick }) => (
 );
 
 /* ─────────────────────────────────────────────────────────
- *  HERO  (original layout — cleaned up + responsive tweaks
- *         + popup wired in)
+ *  HERO COMPONENT
  * ───────────────────────────────────────────────────────── */
 const Hero = () => {
-  /* popup state */
   const [popupVisible, setPopupVisible] = useState(false);
   const [popupDismissed, setPopupDismissed] = useState(false);
+  const typingText = useTypingEffect(CONFIG.roles, 100, 50, 2000);
 
   useEffect(() => {
     const t = setTimeout(() => setPopupVisible(true), CONFIG.popupDelayMs);
@@ -300,89 +370,191 @@ const Hero = () => {
   const closePopup = () => { setPopupVisible(false); setPopupDismissed(true); };
 
   const fadeUp = (delay = 0) => ({
-    initial  : { opacity: 0, y: 28 },
-    animate  : { opacity: 1, y: 0  },
-    transition: { duration: 0.1, delay, ease: [0.2, 0, 0.1, 1] },
+    initial: { opacity: 0, y: 28 },
+    animate: { opacity: 1, y: 0 },
+    transition: { duration: 0.8, delay, ease: [0.2, 0, 0.1, 1] },
   });
 
   return (
-    <div className="relative">
- 
-      <div className="absolute top-0 left-0 z-0 h-[100vh] w-screen">
-        <img src={bwmap} alt="world map" className="w-full h-full sm:block hidden object-cover" />
+    <div className="relative w-full h-screen overflow-hidden">
+      
+      {/* Floating Particles */}
+      <FloatingParticles />
+
+      {/* Background Maps */}
+      <div className="absolute top-0 left-0 z-0 h-full w-full">
+        <img src={bwmap} alt="world map" className="w-full h-full hidden sm:block object-cover opacity-40" />
+        <img src={worldmap} alt="world map" className="w-full h-full sm:hidden block object-cover opacity-40" />
       </div>
-      <div className="absolute top-0 left-0 z-0 h-[100vh] w-screen">
-        <img src={worldmap} alt="world map" className="w-full h-full sm:hidden block object-cover" />
-      </div>
 
-      <section className="relative flex sm:flex-row flex-col w-full h-screen mx-auto sm:bg-hero bg-hero-mobile overflow-hidden">
+      {/* Gradient Overlay */}
+      <div className="absolute inset-0 z-[1] bg-gradient-to-br from-transparent via-transparent to-french/10" />
 
-        <div className={`absolute inset-0 sm:top-[250px] top-[140px] lg:top-[150px] xl:top-[250px] ${styles.paddingX} max-w-7xl mx-auto flex flex-row items-start justify-between gap-3`}>
+      <section className="relative z-10 flex flex-col lg:flex-row w-full h-full mx-auto overflow-hidden">
 
-          <div className="flex flex-col justify-center items-center mt-5 ml-1 sm:ml-3">
-            <motion.div {...fadeUp(0.1)} className="w-4 h-4 rounded-full bg-[#0a0a0a] sm:hidden" />
-            <motion.div {...fadeUp(0.2)} className="w-1 sm:h-80 h-36 bw-gradient sm:hidden" />
+        {/* Left Content */}
+        <div className={`relative flex-1 flex flex-col justify-center ${styles.paddingX} max-w-7xl mx-auto pt-20 sm:pt-24 lg:pt-0`}>
+
+          {/* Decorative Line (Mobile) */}
+          <div className="flex flex-col justify-center items-center mt-5 sm:hidden absolute left-4 top-32">
+            <motion.div {...fadeUp(0.1)} className="w-4 h-4 rounded-full bg-french shadow-lg" />
+            <motion.div {...fadeUp(0.2)} className="w-1 h-24 bg-gradient-to-b from-french to-taupe mt-2" />
           </div>
 
-          <div className="flex-1 max-w-2xl">
-            <motion.h1 {...fadeUp(0)} className={`${styles.heroHeadText} text-eerieBlack font-poppins uppercase`}>
+          {/* Main Content */}
+          <div className="max-w-3xl ml-0 sm:ml-0">
+            
+            {/* Greeting */}
+            <motion.div {...fadeUp(0)} className="mb-4">
+              <p className="text-taupe font-poppins text-base sm:text-lg font-medium tracking-wider uppercase">
+                Welcome to my portfolio
+              </p>
+            </motion.div>
+
+            {/* Name */}
+            <motion.h1 {...fadeUp(0.1)} className={`${styles.heroHeadText} mb-4`}>
               Hi, I'm{' '}
-              <span className="sm:text-battleGray sm:text-[90px] text-eerieBlack text-[48px] font-mova font-extrabold uppercase">
+              <span className="block sm:inline bg-gradient-to-r from-french via-battleGray to-taupe bg-clip-text text-transparent font-extrabold">
                 {CONFIG.yourName}
               </span>
             </motion.h1>
 
-            <motion.p {...fadeUp(0.12)} className={`${styles.heroSubText} mt-2 text-eerieBlack mb-2`}>
-              Full Stack and Android Developer, problem-solver — building efficient{' '}
-              <span className="sm:inline hidden">user-friendly applications with innovative solutions.</span>
-            </motion.p>
+            {/* Typing Animation Role */}
+            <motion.div {...fadeUp(0.2)} className="mb-6">
+              <p className="text-eerieBlack font-poppins text-xl sm:text-2xl md:text-3xl font-bold">
+                <span className="text-french">{'<'}</span>
+                <span className="inline-block min-w-[300px] sm:min-w-[400px]">{typingText}</span>
+                <span className="text-french animate-pulse">|</span>
+                <span className="text-french">{'/>'}</span>
+              </p>
+            </motion.div>
 
-            <motion.p {...fadeUp(0.18)} className="sm:hidden text-eerieBlack font-poppins text-[14px] leading-relaxed -mt-1">
+            {/* Description */}
+            <motion.p {...fadeUp(0.3)} className={`${styles.heroSubText} max-w-2xl`}>
+              Full Stack and Android Developer, problem-solver — building efficient, 
               user-friendly applications with innovative solutions.
             </motion.p>
 
-            <motion.p {...fadeUp(0.24)} className="mt-3">
-              <a href="https://wakatime.com/@6a35f861-13f5-4e6b-ab4a-96a684032fce" target="_blank" rel="noreferrer">
+            {/* WakaTime Badge */}
+            <motion.div {...fadeUp(0.4)} className="mt-6 flex flex-wrap gap-4 items-center">
+              <a 
+                href="https://wakatime.com/@6a35f861-13f5-4e6b-ab4a-96a684032fce" 
+                target="_blank" 
+                rel="noreferrer"
+                className="transform hover:scale-105 transition-transform duration-300"
+              >
                 <img
                   src="https://wakatime.com/badge/user/6a35f861-13f5-4e6b-ab4a-96a684032fce.svg"
-                  alt="Total time coded since Aug 28 2024"
-                  className="h-[20px] sm:h-[24px]"
+                  alt="Total time coded"
+                  className="h-6 sm:h-7 shadow-lg rounded-md"
                 />
               </a>
-            </motion.p>
+              
+              {/* Quick CTA Buttons */}
+              <motion.button
+                whileHover={{ scale: 1.05 }}
+                whileTap={{ scale: 0.95 }}
+                onClick={() => document.getElementById('about')?.scrollIntoView({ behavior: 'smooth' })}
+                className="px-6 py-2.5 bg-gradient-to-r from-french to-taupe text-white font-poppins font-semibold rounded-full shadow-lg hover:shadow-xl transition-all duration-300"
+              >
+                Explore Work
+              </motion.button>
+            </motion.div>
+
+            {/* Social Links */}
+            <motion.div {...fadeUp(0.5)} className="mt-8 flex gap-4">
+              <a 
+                href="https://github.com/durgeshkatyayan" 
+                target="_blank" 
+                rel="noreferrer"
+                className="w-10 h-10 rounded-full bg-eerieBlack/10 hover:bg-french/20 flex items-center justify-center transition-all duration-300 group"
+              >
+                <svg className="w-5 h-5 text-eerieBlack group-hover:text-french transition-colors" fill="currentColor" viewBox="0 0 24 24">
+                  <path d="M12 0c-6.626 0-12 5.373-12 12 0 5.302 3.438 9.8 8.207 11.387.599.111.793-.261.793-.577v-2.234c-3.338.726-4.033-1.416-4.033-1.416-.546-1.387-1.333-1.756-1.333-1.756-1.089-.745.083-.729.083-.729 1.205.084 1.839 1.237 1.839 1.237 1.07 1.834 2.807 1.304 3.492.997.107-.775.418-1.305.762-1.604-2.665-.305-5.467-1.334-5.467-5.931 0-1.311.469-2.381 1.236-3.221-.124-.303-.535-1.524.117-3.176 0 0 1.008-.322 3.301 1.23.957-.266 1.983-.399 3.003-.404 1.02.005 2.047.138 3.006.404 2.291-1.552 3.297-1.23 3.297-1.23.653 1.653.242 2.874.118 3.176.77.84 1.235 1.911 1.235 3.221 0 4.609-2.807 5.624-5.479 5.921.43.372.823 1.102.823 2.222v3.293c0 .319.192.694.801.576 4.765-1.589 8.199-6.086 8.199-11.386 0-6.627-5.373-12-12-12z"/>
+                </svg>
+              </a>
+              <a 
+                href="https://www.linkedin.com/in/durgesh-katyayan-653a572b1/" 
+                target="_blank" 
+                rel="noreferrer"
+                className="w-10 h-10 rounded-full bg-eerieBlack/10 hover:bg-french/20 flex items-center justify-center transition-all duration-300 group"
+              >
+                <svg className="w-5 h-5 text-eerieBlack group-hover:text-french transition-colors" fill="currentColor" viewBox="0 0 24 24">
+                  <path d="M19 0h-14c-2.761 0-5 2.239-5 5v14c0 2.761 2.239 5 5 5h14c2.762 0 5-2.239 5-5v-14c0-2.761-2.238-5-5-5zm-11 19h-3v-11h3v11zm-1.5-12.268c-.966 0-1.75-.79-1.75-1.764s.784-1.764 1.75-1.764 1.75.79 1.75 1.764-.783 1.764-1.75 1.764zm13.5 12.268h-3v-5.604c0-3.368-4-3.113-4 0v5.604h-3v-11h3v1.765c1.396-2.586 7-2.777 7 2.476v6.759z"/>
+                </svg>
+              </a>
+            </motion.div>
           </div>
-          <div className="hidden sm:block w-screen" />
-          <div />
         </div>
 
-        <div className="absolute xs:bottom-10 bottom-28 w-full flex justify-center items-center z-10">
-          <a href="#about">
-            <div className="w-[35px] h-[64px] rounded-3xl border-4 border-french border-dim flex justify-center items-start p-2">
-              <motion.div
-                animate={{ y: [0, 24, 0] }}
-                transition={{ duration: 1.5, repeat: Infinity, repeatType: 'loop' }}
-                className="w-3 h-3 rounded-full bg-taupe"
-              />
+        {/* Right Side - Image with Animations */}
+        <div className="relative flex-1 flex items-end justify-center lg:justify-end">
+          
+          {/* Animated Rings Behind Image */}
+          <div className="absolute bottom-0 right-0 lg:right-20 pointer-events-none">
+            <motion.div
+              animate={{ rotate: 360, scale: [1, 1.1, 1] }}
+              transition={{ duration: 20, repeat: Infinity, ease: "linear" }}
+              className="absolute bottom-10 right-10 w-64 h-64 sm:w-96 sm:h-96 rounded-full border-4 border-french/20"
+            />
+            <motion.div
+              animate={{ rotate: -360, scale: [1, 1.15, 1] }}
+              transition={{ duration: 15, repeat: Infinity, ease: "linear" }}
+              className="absolute bottom-20 right-20 w-72 h-72 sm:w-[28rem] sm:h-[28rem] rounded-full border-4 border-taupe/20"
+            />
+          </div>
+
+          {/* Hero Image */}
+          <motion.div
+            initial={{ opacity: 0, x: 100 }}
+            animate={{ opacity: 1, x: 0 }}
+            transition={{ duration: 1, ease: "easeOut" }}
+            className="relative z-10"
+          >
+            {/* Uncomment when image is ready */}
+            <img
+              src={shaq}
+              alt="Durgesh Katyayan"
+              className="h-[50vh] sm:h-[60vh] md:h-[70vh] lg:h-[85vh] object-contain filter drop-shadow-2xl"
+            />
+            
+            {/* Placeholder for image */}
+            <div className="h-[50vh] sm:h-[60vh] md:h-[70vh] lg:h-[85vh] w-64 sm:w-80 md:w-96 bg-gradient-to-br from-french/20 to-taupe/20 rounded-t-full backdrop-blur-sm border-4 border-white/30 shadow-2xl flex items-center justify-center">
+              <p className="text-eerieBlack/40 font-poppins text-center px-4">
+                Your Image Here
+              </p>
             </div>
+          </motion.div>
+        </div>
+
+        {/* Scroll Indicator */}
+        <div className="absolute bottom-8 sm:bottom-10 left-1/2 transform -translate-x-1/2 z-20">
+          <a href="#about">
+            <motion.div 
+              initial={{ opacity: 0, y: -20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 1, duration: 0.8 }}
+              className="w-[32px] h-[56px] rounded-3xl border-4 border-french flex justify-center items-start p-2 cursor-pointer hover:border-taupe transition-colors duration-300"
+            >
+              <motion.div
+                animate={{ y: [0, 20, 0] }}
+                transition={{ duration: 1.5, repeat: Infinity, repeatType: 'loop' }}
+                className="w-2.5 h-2.5 rounded-full bg-french"
+              />
+            </motion.div>
           </a>
         </div>
 
-        {/* ── hero image (uncomment src when ready) ── */}
-        <div>
-          <img
-            className="absolute bottom-0 ml-[50vw] lg:ml-[75vw] md:ml-[60vw] xmd:ml-[60vw] 2xl:ml-[83vw] sm:h-[90vh] md:h-[70vh] xl:h-[80vh]"
-            // src={shaq}
-            alt="Durgesh Katyayan"
-          />
-        </div>
       </section>
 
-      {/* ─── POPUP / REOPEN PILL ─── */}
+      {/* Popup & Reopen Button */}
       <AnimatePresence>
         {popupVisible && <Popup onClose={closePopup} />}
       </AnimatePresence>
       <AnimatePresence>
-        {popupDismissed && !popupVisible && <ReopenPill onClick={() => { setPopupVisible(true); setPopupDismissed(false); }} />}
+        {popupDismissed && !popupVisible && (
+          <ReopenPill onClick={() => { setPopupVisible(true); setPopupDismissed(false); }} />
+        )}
       </AnimatePresence>
     </div>
   );

@@ -10,7 +10,9 @@ const SectionWrapper = (Component, idName) => {
         initial="hidden"
         whileInView="show"
         viewport={{ once: false, amount: 0.25 }}
-        className={`${styles.padding} max-w-7xl mx-auto relative z-0`}>
+        // Added 'w-full' and ensured 'styles.padding' handles mobile gutters
+        className={`${styles.padding} max-w-7xl mx-auto relative z-0 w-full`}
+      >
         <span className="hash-span" id={idName}>
           &nbsp;
         </span>
